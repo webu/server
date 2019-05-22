@@ -42,18 +42,12 @@ use OCP\Template;
 class AdminSettingsController extends Controller {
 	use CommonSettingsTrait;
 
-	/**
-	 * @param string $appName
-	 * @param IRequest $request
-	 * @param INavigationManager $navigationManager
-	 * @param ISettingsManager $settingsManager
-	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
 		INavigationManager $navigationManager,
-		IUserSession $userSession,
 		ISettingsManager $settingsManager,
+		IUserSession $userSession,
 		IGroupManager $groupManager,
 		ISubAdmin $subAdmin
 	) {
@@ -61,8 +55,8 @@ class AdminSettingsController extends Controller {
 		$this->navigationManager = $navigationManager;
 		$this->settingsManager = $settingsManager;
 		$this->userSession = $userSession;
-		$this->subAdmin = $subAdmin;
 		$this->groupManager = $groupManager;
+		$this->subAdmin = $subAdmin;
 	}
 
 	/**
