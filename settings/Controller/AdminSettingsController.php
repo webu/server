@@ -27,8 +27,12 @@ namespace OC\Settings\Controller;
 
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\Group\ISubAdmin;
+use OCP\IGroupManager;
 use OCP\INavigationManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use OCP\Settings\IManager as ISettingsManager;
 use OCP\Template;
 
@@ -48,11 +52,17 @@ class AdminSettingsController extends Controller {
 		$appName,
 		IRequest $request,
 		INavigationManager $navigationManager,
-		ISettingsManager $settingsManager
+		IUserSession $userSession,
+		ISettingsManager $settingsManager,
+		IGroupManager $groupManager,
+		ISubAdmin $subAdmin
 	) {
 		parent::__construct($appName, $request);
 		$this->navigationManager = $navigationManager;
 		$this->settingsManager = $settingsManager;
+		$this->userSession = $userSession;
+		$this->subAdmin = $subAdmin;
+		$this->groupManager = $groupManager;
 	}
 
 	/**
@@ -60,6 +70,7 @@ class AdminSettingsController extends Controller {
 	 * @return TemplateResponse
 	 *
 	 * @NoCSRFRequired
+	 * @SubAdminRequired
 	 */
 	public function index($section) {
 		return $this->getIndexResponse('admin', $section);
@@ -70,9 +81,16 @@ class AdminSettingsController extends Controller {
 	 * @return array
 	 */
 	protected function getSettings($section) {
-		$settings = $this->settingsManager->getAdminSettings($section);
+		/** @var IUser $user */
+		$user = $this->userSession->getUser();
+		$isSubAdmin = !$this->groupManager->isAdmin($user->getUID()) && $this->subAdmin->isSubAdmin($user);
+		$settings = $this->settingsManager->getAdminSettings(
+			$section,
+			$isSubAdmin
+		);
 		$formatted = $this->formatSettings($settings);
-		if($section === 'additional') {
+		// Do not show legacy forms for sub admins
+		if($section === 'additional' && !$isSubAdmin) {
 			$formatted['content'] .= $this->getLegacyForms();
 		}
 		return $formatted;

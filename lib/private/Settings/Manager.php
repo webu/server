@@ -29,6 +29,8 @@
 
 namespace OC\Settings;
 
+use function array_filter;
+use function array_map;
 use OCP\AppFramework\QueryException;
 use OCP\IL10N;
 use OCP\ILogger;
@@ -38,6 +40,7 @@ use OCP\L10N\IFactory;
 use OCP\Settings\ISettings;
 use OCP\Settings\IManager;
 use OCP\Settings\ISection;
+use OCP\Settings\ISubAdminSettings;
 
 class Manager implements IManager {
 
@@ -290,7 +293,7 @@ class Manager implements IManager {
 	/**
 	 * @inheritdoc
 	 */
-	public function getAdminSettings($section): array {
+	public function getAdminSettings($section, bool $subAdminOnly = false): array {
 		$settings = $this->getBuiltInAdminSettings($section);
 		$appSettings = $this->getSettings('admin', $section);
 
@@ -301,8 +304,20 @@ class Manager implements IManager {
 			$settings[$setting->getPriority()][] = $setting;
 		}
 
-		ksort($settings);
-		return $settings;
+		if (!$subAdminOnly) {
+			// Admins get to see everything
+			$toShow = $settings;
+		} else {
+			// Sub admins only see a subset
+			$toShow = array_map(function(array $settings) {
+				array_filter($settings, function(ISettings $settings) {
+					return $settings instanceof ISubAdminSettings;
+				});
+			}, $settings);
+		}
+
+		ksort($toShow);
+		return $toShow;
 	}
 
 	/**

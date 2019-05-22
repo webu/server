@@ -25,17 +25,31 @@
 namespace OC\Settings\Controller;
 
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\Group\ISubAdmin;
+use OCP\IGroupManager;
 use OCP\INavigationManager;
+use OCP\IUser;
+use OCP\IUserSession;
 use OCP\Settings\IManager as ISettingsManager;
 use OCP\Settings\IIconSection;
 use OCP\Settings\ISettings;
 
 trait CommonSettingsTrait  {
+
 	/** @var ISettingsManager */
 	private $settingsManager;
 
 	/** @var INavigationManager */
 	private $navigationManager;
+
+	/** @var IUserSession */
+	private $userSession;
+
+	/** @var IGroupManager */
+	private $groupManager;
+
+	/** @var ISubAdmin */
+	private $subAdmin;
 
 	/**
 	 * @param string $currentSection
@@ -47,7 +61,10 @@ trait CommonSettingsTrait  {
 			'admin' => []
 		];
 
-		if(\OC_User::isAdminUser(\OC_User::getUser())) {
+		/** @var IUser $user */
+		$user = $this->userSession->getUser();
+		if($this->groupManager->isAdmin($user->getUID())
+			|| $this->subAdmin->isSubAdmin($user)) {
 			$templateParameters['admin'] = $this->formatAdminSections($currentType, $currentSection);
 		}
 
