@@ -309,11 +309,14 @@ class Manager implements IManager {
 			$toShow = $settings;
 		} else {
 			// Sub admins only see a subset
-			$toShow = array_map(function(array $settings) {
+			$subAdminOnlySettings = array_map(function(array $settings) {
 				return array_filter($settings, function(ISettings $settings) {
 					return $settings instanceof ISubAdminSettings;
 				});
 			}, $settings);
+			$toShow = array_filter($subAdminOnlySettings, function(array $settings) {
+				return !empty($settings);
+			});
 		}
 
 		ksort($toShow);
