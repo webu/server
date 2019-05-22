@@ -152,6 +152,8 @@ class SecurityMiddleware extends Middleware {
 				&& !$this->isAdminUser) {
 				throw new NotAdminException($this->l10n->t('Logged in user must be an admin or sub admin'));
 			}
+			$x = $this->reflector->hasAnnotation('SubAdminRequired');
+			$y = $this->reflector->hasAnnotation('NoAdminRequired');
 			if(!$this->reflector->hasAnnotation('SubAdminRequired')
 				&& !$this->reflector->hasAnnotation('NoAdminRequired')
 				&& !$this->isAdminUser) {

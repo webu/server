@@ -25,6 +25,11 @@ declare(strict_types=1);
 
 namespace OCP\Settings;
 
+/**
+ * Tagging interface for settings that should be shown to sub admins
+ *
+ * @since 17.0.0
+ */
 interface ISubAdminSettings extends ISettings {
 
 }
