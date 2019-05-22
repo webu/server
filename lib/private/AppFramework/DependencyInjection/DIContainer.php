@@ -219,7 +219,7 @@ class DIContainer extends SimpleContainer implements IAppContainer {
 				$c['AppName'],
 				$server->getUserSession()->isLoggedIn(),
 				$server->getGroupManager()->isAdmin($this->getUserId()),
-				$server->query(ISubAdmin::class)->isSubAdmin($server->getUserSession()->getUser()),
+				$server->getUserSession()->getUser() !== null && $server->query(ISubAdmin::class)->isSubAdmin($server->getUserSession()->getUser()),
 				$server->getContentSecurityPolicyManager(),
 				$server->getCsrfTokenManager(),
 				$server->getContentSecurityPolicyNonceManager(),
