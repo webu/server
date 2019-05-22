@@ -310,7 +310,7 @@ class Manager implements IManager {
 		} else {
 			// Sub admins only see a subset
 			$toShow = array_map(function(array $settings) {
-				array_filter($settings, function(ISettings $settings) {
+				return array_filter($settings, function(ISettings $settings) {
 					return $settings instanceof ISubAdminSettings;
 				});
 			}, $settings);
