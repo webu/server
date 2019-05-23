@@ -31,6 +31,7 @@ namespace OC\Settings;
 
 use function array_filter;
 use function array_map;
+use Closure;
 use OCP\AppFramework\QueryException;
 use OCP\IL10N;
 use OCP\ILogger;
@@ -153,10 +154,11 @@ class Manager implements IManager {
 	/**
 	 * @param string $type 'admin' or 'personal'
 	 * @param string $section
+	 * @param Closure $filter optional filter to apply on all loaded ISettings
 	 *
 	 * @return ISettings[]
 	 */
-	protected function getSettings(string $type, string $section): array {
+	protected function getSettings(string $type, string $section, Closure $filter = null): array {
 		if (!isset($this->settings[$type])) {
 			$this->settings[$type] = [];
 		}
@@ -165,6 +167,10 @@ class Manager implements IManager {
 		}
 
 		foreach ($this->settingClasses as $class => $settingsType) {
+			if ($type !== $settingsType) {
+				continue;
+			}
+
 			try {
 				/** @var ISettings $setting */
 				$setting = \OC::$server->query($class);
@@ -178,6 +184,12 @@ class Manager implements IManager {
 				continue;
 			}
 
+			if ($filter === null && $type === 'admin') {
+				$x = 4;
+			}
+			if ($filter !== null && !$filter($setting)) {
+				continue;
+			}
 			if ($setting->getSection() === null) {
 				continue;
 			}
@@ -232,30 +244,40 @@ class Manager implements IManager {
 	 *
 	 * @return ISection[]
 	 */
-	private function getBuiltInAdminSettings($section): array {
+	private function getBuiltInAdminSettings($section, bool $subAdminOnly = false): array {
 		$forms = [];
 
 		if ($section === 'overview') {
 			/** @var ISettings $form */
 			$form = $this->container->query(Admin\Overview::class);
-			$forms[$form->getPriority()] = [$form];
+			if ($subAdminOnly && $form instanceof ISubAdminSettings) {
+				$forms[$form->getPriority()] = [$form];
+			}
 		}
 		if ($section === 'server') {
 			/** @var ISettings $form */
 			$form = $this->container->query(Admin\Server::class);
-			$forms[$form->getPriority()] = [$form];
+			if ($subAdminOnly && $form instanceof ISubAdminSettings) {
+				$forms[$form->getPriority()] = [$form];
+			}
 			$form = $this->container->query(Admin\Mail::class);
-			$forms[$form->getPriority()] = [$form];
+			if ($subAdminOnly && $form instanceof ISubAdminSettings) {
+				$forms[$form->getPriority()] = [$form];
+			}
 		}
 		if ($section === 'security') {
 			/** @var ISettings $form */
 			$form = $this->container->query(Admin\Security::class);
-			$forms[$form->getPriority()] = [$form];
+			if ($subAdminOnly && $form instanceof ISubAdminSettings) {
+				$forms[$form->getPriority()] = [$form];
+			}
 		}
 		if ($section === 'sharing') {
 			/** @var ISettings $form */
 			$form = $this->container->query(Admin\Sharing::class);
-			$forms[$form->getPriority()] = [$form];
+			if ($subAdminOnly && $form instanceof ISubAdminSettings) {
+				$forms[$form->getPriority()] = [$form];
+			}
 		}
 
 		return $forms;
@@ -294,8 +316,14 @@ class Manager implements IManager {
 	 * @inheritdoc
 	 */
 	public function getAdminSettings($section, bool $subAdminOnly = false): array {
-		$settings = $this->getBuiltInAdminSettings($section);
-		$appSettings = $this->getSettings('admin', $section);
+		$settings = $this->getBuiltInAdminSettings($section, $subAdminOnly);
+		if ($subAdminOnly) {
+			$appSettings = $this->getSettings('admin', $section, function(ISettings $settings) {
+				return $settings instanceof ISubAdminSettings;
+			});
+		} else {
+			$appSettings = $this->getSettings('admin', $section);
+		}
 
 		foreach ($appSettings as $setting) {
 			if (!isset($settings[$setting->getPriority()])) {
@@ -304,23 +332,8 @@ class Manager implements IManager {
 			$settings[$setting->getPriority()][] = $setting;
 		}
 
-		if (!$subAdminOnly) {
-			// Admins get to see everything
-			$toShow = $settings;
-		} else {
-			// Sub admins only see a subset
-			$subAdminOnlySettings = array_map(function(array $settings) {
-				return array_filter($settings, function(ISettings $settings) {
-					return $settings instanceof ISubAdminSettings;
-				});
-			}, $settings);
-			$toShow = array_filter($subAdminOnlySettings, function(array $settings) {
-				return !empty($settings);
-			});
-		}
-
-		ksort($toShow);
-		return $toShow;
+		ksort($settings);
+		return $settings;
 	}
 
 	/**

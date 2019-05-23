@@ -65,7 +65,11 @@ trait CommonSettingsTrait  {
 		$user = $this->userSession->getUser();
 		if($this->groupManager->isAdmin($user->getUID())
 			|| $this->subAdmin->isSubAdmin($user)) {
-			$templateParameters['admin'] = $this->formatAdminSections($currentType, $currentSection);
+			$templateParameters['admin'] = $this->formatAdminSections(
+				$currentType,
+				$currentSection,
+				$this->subAdmin->isSubAdmin($user)
+			);
 		}
 
 		return [
@@ -73,13 +77,13 @@ trait CommonSettingsTrait  {
 		];
 	}
 
-	protected function formatSections($sections, $currentSection, $type, $currentType) {
+	protected function formatSections($sections, $currentSection, $type, $currentType, bool $subAdminOnly = false) {
 		$templateParameters = [];
 		/** @var \OCP\Settings\ISection[] $prioritizedSections */
 		foreach($sections as $prioritizedSections) {
 			foreach ($prioritizedSections as $section) {
 				if($type === 'admin') {
-					$settings = $this->settingsManager->getAdminSettings($section->getID());
+					$settings = $this->settingsManager->getAdminSettings($section->getID(), $subAdminOnly);
 				} else if($type === 'personal') {
 					$settings = $this->settingsManager->getPersonalSettings($section->getID());
 				}
@@ -113,9 +117,9 @@ trait CommonSettingsTrait  {
 		return $templateParameters;
 	}
 
-	protected function formatAdminSections($currentType, $currentSections) {
+	protected function formatAdminSections($currentType, $currentSections, bool $subAdminOnly) {
 		$sections = $this->settingsManager->getAdminSections();
-		$templateParameters = $this->formatSections($sections, $currentSections, 'admin', $currentType);
+		$templateParameters = $this->formatSections($sections, $currentSections, 'admin', $currentType, $subAdminOnly);
 
 		return $templateParameters;
 	}
