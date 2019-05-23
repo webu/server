@@ -123,10 +123,10 @@ class ViewController extends Controller {
 	 * @return array
 	 * @throws \OCP\Files\NotFoundException
 	 */
-	protected function getStorageInfo() {
-		$dirInfo = \OC\Files\Filesystem::getFileInfo('/', false);
+	protected function getStorageInfo($dir='/') {
+		$dirInfo = \OC\Files\Filesystem::getFileInfo($dir, false);
 
-		return \OC_Helper::getStorageInfo('/', $dirInfo);
+		return \OC_Helper::getStorageInfo($dir, $dirInfo);
 	}
 
 	/**
@@ -158,7 +158,6 @@ class ViewController extends Controller {
 				return new RedirectResponse($this->urlGenerator->linkToRoute('files.view.index', ['fileNotFound' => true]));
 			}
 		}
-
 		$nav = new \OCP\Template('files', 'appnavigation', '');
 
 		// Load the files we need
@@ -232,6 +231,23 @@ class ViewController extends Controller {
 		$nav->assign('quota', $storageInfo['quota']);
 		$nav->assign('usage_relative', $storageInfo['relative']);
 
+		if($dir){
+			$currentDirStorageInfo = $this->getStorageInfo($dir);
+			if($currentDirStorageInfo['owner'] != $user){
+				// this folder is not owned by current user
+				// we need to display current dir quota (from owner)
+				$nav->assign('shared_folder_usage', \OC_Helper::humanFileSize($currentDirStorageInfo['used']));
+				if ($storageInfo['shared_folder_quota'] === \OCP\Files\FileInfo::SPACE_UNLIMITED) {
+					$currentDirTotalSpace = $this->l10n->t('Unlimited');
+				} else {
+					$currentDirTotalSpace = \OC_Helper::humanFileSize($currentDirStorageInfo['total']);
+				}
+				$nav->assign('shared_folder_total_space', $currentDirTotalSpace);
+				$nav->assign('shared_folder_quota', $currentDirStorageInfo['quota']);
+				$nav->assign('shared_folder_usage_relative', $currentDirStorageInfo['relative']);
+			}
+		}
+
 		$contentItems = [];
 
 		// render the container content for every navigation item
@@ -258,7 +274,6 @@ class ViewController extends Controller {
 				'content' => $content
 			];
 		}
-
 		$event = new GenericEvent(null, ['hiddenFields' => []]);
 		$this->eventDispatcher->dispatch('OCA\Files::loadAdditionalScripts', $event);
 

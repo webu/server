@@ -1,27 +1,63 @@
 <div id="app-navigation">
 	<ul class="with-icon">
-
 		<?php
-
 		$pinned = 0;
 		foreach ($_['navigationItems'] as $item) {
 			$pinned = NavigationListElements($item, $l, $pinned);
 		}
-		?>
+		$quotaUnlimited = $_['quota'] === \OCP\Files\FileInfo::SPACE_UNLIMITED;
+		$sharedQuota = isset($_['shared_folder_quota']);
+		$sharedFolderQuotaUnlimited = $sharedQuota && $_['shared_folder_quota'] === \OCP\Files\FileInfo::SPACE_UNLIMITED;
+
+		if (isset($_['shared_folder_quota'])): ?>
+			<li id="shared-folder-quota"
+				class="pinned <?php p($pinned === 0 ? 'first-pinned ' : '') ?> has-tooltip"
+				title="<?php
+					p($l->t('shared folder quota'));
+					if (!$sharedFolderQuotaUnlimited) {
+						p(' | ' . $_['shared_folder_usage_relative'] . '%');
+						p($l->t('%s of %s used', [$_['shared_folder_usage'], $_['total_space']]));
+					}?>"
+			>
+				<a href="#" class="icon-shared-folder-quota svg">
+					<p id="shared-folder-quotatext">
+					<?php
+						if (!$sharedFolderQuotaUnlimited) {
+							p($l->t('%1$s of %2$s used', [$_['shared_folder_usage'], $_['shared_folder_total_space']]));
+						} else {
+							p($l->t('%s used', [$_['shared_folder_usage']]));
+						} ?>
+					</p>
+					<div class="quota-container">
+						<progress value="<?php p($_['shared_folder_usage_relative']); ?>"
+								max="100"
+							<?php if ($_['shared_folder_usage_relative'] > 80): ?> class="warn" <?php endif; ?>></progress>
+					</div>
+				</a>
+			</li>
+		<?php endif; ?>
 
 		<li id="quota"
 			class="pinned <?php p($pinned === 0 ? 'first-pinned ' : '') ?><?php
-			if ($_['quota'] !== \OCP\Files\FileInfo::SPACE_UNLIMITED) {
-			?>has-tooltip" title="<?php p($_['usage_relative'] . '%, ');
-			p($l->t('%s of %s used', [$_['usage'], $_['total_space']]));
-		} ?>">
+			if (!$quotaUnlimited || $sharedQuota) {
+				?>has-tooltip" title="<?php
+				if($sharedQuota) {p('personal quota'); }
+				if(!$quotaUnlimited && $sharedQuota) {p(' | '); }
+				if(!$quotaUnlimited) {
+					p($_['usage_relative'] . '%');
+					p($l->t('%s of %s used', [$_['usage'], $_['total_space']]));
+				}
+			} ?>"
+		>
 			<a href="#" class="icon-quota svg">
-				<p id="quotatext"><?php
-					if ($_['quota'] !== \OCP\Files\FileInfo::SPACE_UNLIMITED) {
+				<p id="quotatext">
+				<?php
+					if (!$quotaUnlimited) {
 						p($l->t('%1$s%% of %2$s used', [round($_['usage_relative'], 1), $_['total_space']]));
 					} else {
 						p($l->t('%s used', [$_['usage']]));
-					} ?></p>
+					} ?>
+				</p>
 				<div class="quota-container">
 					<progress value="<?php p($_['usage_relative']); ?>"
 							  max="100"

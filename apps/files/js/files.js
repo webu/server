@@ -37,8 +37,12 @@
 		},
 		_updateStorageQuotas: function() {
 			var state = Files.updateStorageQuotas;
-			state.call = $.getJSON(OC.filePath('files','ajax','getstoragestats.php'),function(response) {
-				Files.updateQuota(response);
+			state.call = $.getJSON(OC.filePath('files','ajax','getstoragestats.php') + '?dir=' + encodeURIComponent(currentDir),function(response) {
+				if (response.data.owner !== oc_current_user) {
+					Files.updateSharedFolderQuota(response);
+				}else{
+					Files.updateQuota(response);
+				}
 			});
 		},
 		/**
@@ -68,6 +72,7 @@
 			if (response === undefined) {
 				return;
 			}
+			console.log(response.data);
 			if (response.data !== undefined && response.data.uploadMaxFilesize !== undefined) {
 				$('#free_space').val(response.data.freeSpace);
 				$('#upload.button').attr('data-original-title', response.data.maxHumanFilesize);
@@ -111,6 +116,31 @@
 				}
 			}
 
+		},
+
+		updateSharedFolderQuota:function(response) {
+			if (response === undefined) {
+				return;
+			}
+			if (response.data !== undefined
+			 && response.data.quota !== undefined
+			 && response.data.used !== undefined
+			 && response.data.usedSpacePercent !== undefined) {
+				var humanUsed = OC.Util.humanFileSize(response.data.used, true);
+				var humanQuota = OC.Util.humanFileSize(response.data.quota, true);
+				if (response.data.quota > 0) {
+					$('#shared-folder-quota').attr('data-original-title', Math.floor(response.data.used/response.data.quota*1000)/10 + '%');
+					$('#shared-folder-quota progress').val(response.data.usedSpacePercent);
+					$('#shared-folder-quotatext').text(t('files', '{used} of {quota} used', {used: humanUsed, quota: humanQuota}));
+				} else {
+					$('#shared-folder-quotatext').text(t('files', '{used} used', {used: humanUsed}));
+				}
+				if (response.data.usedSpacePercent > 80) {
+					$('#shared-folder-quota progress').addClass('warn');
+				} else {
+					$('#shared-folder-quota progress').removeClass('warn');
+				}
+			}
 		},
 
 		/**

@@ -764,7 +764,8 @@ table.dragshadow td.size {
 }
 
 
-#quota {
+#quota,
+#shared-folder-quota {
 	margin: 0 !important;
 	border: none;
 	border-radius: 0;
@@ -790,7 +791,8 @@ table.dragshadow td.size {
 	}
 }
 
-#quotatext {
+#quotatext,
+#shared-folder-quotatext {
 	padding: 0;
 	height: 30px;
 	line-height: 30px;

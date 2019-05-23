@@ -132,6 +132,10 @@
 				placement: 'top'
 			});
 
+			$('#shared-folder-quota.has-tooltip').tooltip({
+				placement: 'top'
+			});
+
 			this._debouncedPersistShowHiddenFilesState = _.debounce(this._persistShowHiddenFilesState, 1200);
 
 			if (sessionStorage.getItem('WhatsNewServerCheck') < (Date.now() - 3600*1000)) {
